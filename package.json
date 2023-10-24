@@ -4,7 +4,7 @@
   "description": "Replaces tokens in the current file with values from the specified Azure DevOps Variable Library",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/slmcmahon/vscode-azdo-lib-var-search-replace"
   },
   "version": "0.0.2",
   "engines": {
