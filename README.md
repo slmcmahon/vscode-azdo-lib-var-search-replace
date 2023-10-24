@@ -1,27 +1,21 @@
-# azdo-libvar-search-replace README
+# Azure Devops Variable Library Search & Replace README
 
-This extension will replace the contents of the current file with variables found in azure devops libraries
+This extension will allow you to quickly execute search and replace for tokens in a text file that match variables defined in an Azure Devops Variable Library.
 
 ## Features
 
-tbd
+Automatically lists all of the variable libraries in your Azure DevOps repository and allows you to select from the list.
 
 ## Requirements
 
-tbd
+You must have access to an Azure Devops Project and be able to generate a token that allows read access to variable libraries:
+
+![pat](images/vgroup-sc.png)
 
 ## Extension Settings
 
-TBD
+The following configuration parameters are required:
 
-## Known Issues
-
-TBD
-
-## Release Notes
-
-tbd
-
-### 1.0.0
-
-tbd
+- `myExtenazdo-libvar-search-replacesion.org`: The name of your Azure Devops Organization.
+- `azdo-libvar-search-replace.project`: The name of your azure-devops project.
+- `azdo-libvar-search-replace.pat`: A personal access token that grants access to read variable libraries.
