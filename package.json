@@ -2,13 +2,15 @@
   "name": "azdo-libvar-search-replace",
   "displayName": "Azure DevOps Variable Library Search and Replace",
   "description": "Replaces tokens in the current file with values from the specified Azure DevOps Variable Library",
+  "publisher": "slmcmahon",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/slmcmahon/vscode-azdo-lib-var-search-replace"
   },
-  "version": "0.0.2",
+  "version": "0.1.0",
   "engines": {
-    "vscode": "^1.83.0"
+    "vscode": "^1.95.0"
   },
   "categories": [
     "Other"
@@ -20,16 +22,19 @@
       {
         "command": "azdo-libvar-search-replace.searchAndReplace",
         "title": "Search and Replace using Azure DevOps Variable Library"
+      },
+      {
+        "command": "azdo-libvar-search-replace.configureCredentials",
+        "title": "Configure Azure DevOps Credentials"
+      },
+      {
+        "command": "azdo-libvar-search-replace.clearCredentials",
+        "title": "Clear Azure DevOps Credentials"
       }
     ],
     "configuration": {
       "title": "Azure DevOps Variable Library Search and Replace",
       "properties": {
-        "azdo-libvar-search-replace.pat": {
-          "type": "string",
-          "default": "",
-          "description": "Azure DevOps Personal Access Token"
-        },
         "azdo-libvar-search-replace.org": {
           "type": "string",
           "default": "",
@@ -39,6 +44,11 @@
           "type": "string",
           "default": "",
           "description": "Azure DevOps Project"
+        },
+        "azdo-libvar-search-replace.cacheTimeout": {
+          "type": "number",
+          "default": 300000,
+          "description": "Cache timeout for variable libraries in milliseconds (default: 5 minutes)"
         }
       }
     }
@@ -48,22 +58,24 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.2",
-    "@types/node": "18.x",
-    "@types/vscode": "^1.83.0",
-    "@typescript-eslint/eslint-plugin": "^6.7.3",
-    "@typescript-eslint/parser": "^6.7.3",
-    "@vscode/test-electron": "^2.3.4",
-    "eslint": "^8.50.0",
-    "glob": "^10.3.3",
-    "mocha": "^10.2.0",
-    "typescript": "^5.2.2"
+    "@eslint/js": "^9.15.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.95.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.1",
+    "eslint": "^9.15.0",
+    "glob": "^11.0.0",
+    "mocha": "^10.8.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.16.0"
   },
-  "dependencies": {
-    "axios": "^1.5.1"
-  }
+  "dependencies": {}
 }
