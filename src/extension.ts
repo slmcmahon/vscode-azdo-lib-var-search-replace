@@ -34,6 +34,27 @@ export function activate(context: vscode.ExtensionContext): void {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand(
+			'azdo-libvar-search-replace.setOrganization',
+			handleSetOrganization
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			'azdo-libvar-search-replace.setProject',
+			handleSetProject
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			'azdo-libvar-search-replace.resetConfiguration',
+			handleResetConfiguration
+		)
+	);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
 			'azdo-libvar-search-replace.clearCredentials',
 			handleClearCredentials
 		)
@@ -65,28 +86,27 @@ async function handleSearchAndReplace(): Promise<void> {
 			return;
 		}
 
-		// Check if configured
-		const isConfigured = await configManager.isConfigured();
-		if (!isConfigured) {
-			const configure = await vscode.window.showWarningMessage(
-				'Azure DevOps credentials are not configured.',
-				'Configure Now',
-				'Cancel'
-			);
-
-			if (configure === 'Configure Now') {
-				const configured = await configManager.promptForConfiguration();
-				if (!configured) {
-					return;
-				}
-			} else {
+		// Ensure organization/project configured (may prompt)
+		let orgProj = configManager.getOrgAndProject();
+		if (!orgProj) {
+			const configured = await configManager.promptForConfiguration();
+			if (!configured) {
+				return;
+			}
+			orgProj = configManager.getOrgAndProject();
+			if (!orgProj) {
 				return;
 			}
 		}
 
-		// Get configuration
-		const config = await configManager.getConfig();
-		outputChannel.appendLine(`Fetching variable libraries for ${config.organization}/${config.project}`);
+		// Get authentication token (prefer AAD, fall back to PAT)
+		const auth = await configManager.getAuthTokenOrPAT();
+		if (!auth) {
+			return;
+		}
+
+		const config = { organization: orgProj.organization, project: orgProj.project, pat: auth.type === 'pat' ? auth.token : undefined };
+		outputChannel.appendLine(`Fetching variable libraries for ${config.organization}/${config.project} (auth: ${auth.type})`);
 
 		// Fetch variable libraries with progress indicator
 		const variableLibraries = await vscode.window.withProgress(
@@ -97,7 +117,7 @@ async function handleSearchAndReplace(): Promise<void> {
 			},
 			async (progress) => {
 				progress.report({ message: 'Loading...' });
-				return await azureDevOpsClient.getVariableLibraries(config);
+				return await azureDevOpsClient.getVariableLibraries(config, auth.type === 'aad' ? auth.token : undefined);
 			}
 		);
 
@@ -259,6 +279,97 @@ async function handleClearCredentials(): Promise<void> {
 			vscode.window.showInformationMessage('Azure DevOps credentials cleared successfully.');
 			outputChannel.appendLine('Credentials cleared');
 		}
+	} catch (error) {
+		handleError(error);
+	}
+}
+
+/**
+ * Allow the user to set/replace the configured Azure DevOps organization
+ */
+async function handleSetOrganization(): Promise<void> {
+	try {
+		const config = vscode.workspace.getConfiguration('azdo-libvar-search-replace');
+		const current = config.get<string>('org', '').trim();
+
+		const orgInput = await vscode.window.showInputBox({
+			prompt: 'Enter your Azure DevOps organization name',
+			placeHolder: 'e.g., mycompany',
+			value: current || undefined,
+			ignoreFocusOut: true,
+			validateInput: (value) => {
+				return value.trim() ? null : 'Organization name is required';
+			},
+		});
+
+		if (!orgInput) {
+			return;
+		}
+
+		await config.update('org', orgInput.trim(), vscode.ConfigurationTarget.Global);
+		azureDevOpsClient.clearCache();
+		outputChannel.appendLine(`Organization set to ${orgInput.trim()} - cache cleared`);
+		vscode.window.showInformationMessage('Azure DevOps organization updated.');
+	} catch (error) {
+		handleError(error);
+	}
+}
+
+/**
+ * Allow the user to set/replace the configured Azure DevOps project
+ */
+async function handleSetProject(): Promise<void> {
+	try {
+		const config = vscode.workspace.getConfiguration('azdo-libvar-search-replace');
+		const current = config.get<string>('project', '').trim();
+
+		const projectInput = await vscode.window.showInputBox({
+			prompt: 'Enter your Azure DevOps project name',
+			placeHolder: 'e.g., MyProject',
+			value: current || undefined,
+			ignoreFocusOut: true,
+			validateInput: (value) => {
+				return value.trim() ? null : 'Project name is required';
+			},
+		});
+
+		if (!projectInput) {
+			return;
+		}
+
+		await config.update('project', projectInput.trim(), vscode.ConfigurationTarget.Global);
+		azureDevOpsClient.clearCache();
+		outputChannel.appendLine(`Project set to ${projectInput.trim()} - cache cleared`);
+		vscode.window.showInformationMessage('Azure DevOps project updated.');
+	} catch (error) {
+		handleError(error);
+	}
+}
+
+/**
+ * Reset the saved Azure DevOps configuration: org, project, and stored PAT
+ */
+async function handleResetConfiguration(): Promise<void> {
+	try {
+		const confirm = await vscode.window.showWarningMessage(
+			'Reset Azure DevOps configuration (organization, project, and stored PAT)?',
+			{ modal: true },
+			'Yes',
+			'No'
+		);
+
+		if (confirm !== 'Yes') {
+			return;
+		}
+
+		const config = vscode.workspace.getConfiguration('azdo-libvar-search-replace');
+		await config.update('org', '', vscode.ConfigurationTarget.Global);
+		await config.update('project', '', vscode.ConfigurationTarget.Global);
+		await configManager.deletePAT();
+		azureDevOpsClient.clearCache();
+
+		outputChannel.appendLine('Azure DevOps configuration reset (org, project cleared; PAT deleted)');
+		vscode.window.showInformationMessage('Azure DevOps configuration has been reset.');
 	} catch (error) {
 		handleError(error);
 	}

@@ -7,6 +7,79 @@ export class ConfigurationManager {
 	constructor(private context: vscode.ExtensionContext) {}
 
 	/**
+	 * Try to obtain an Azure AD access token via VS Code's authentication providers.
+	 * Returns the access token string or null if not available.
+	 */
+	async getAADToken(): Promise<string | null> {
+		try {
+			// Try common provider ids that may be registered in the host
+			const providerCandidates = ['microsoft', 'azure'];
+			const scopes = ['499b84ac-1321-427f-aa17-267ca6975798/.default'];
+
+			for (const providerId of providerCandidates) {
+				try {
+					const session = await vscode.authentication.getSession(providerId, scopes, { createIfNone: true });
+					if (session && session.accessToken) {
+						return session.accessToken;
+					}
+				} catch {
+					// ignore and try next provider id
+				}
+			}
+		} catch {
+			// no-op
+		}
+		return null;
+	}
+
+	/**
+	 * Return an authentication token object: prefer AAD token, fall back to stored PAT.
+	 * If neither is available, prompts the user to sign in or configure a PAT.
+	 */
+	async getAuthTokenOrPAT(): Promise<{ type: 'aad' | 'pat'; token: string } | null> {
+		// Try AAD first
+		const aad = await this.getAADToken();
+		if (aad) {
+			return { type: 'aad', token: aad };
+		}
+
+		// Fall back to stored PAT
+		const pat = await this.context.secrets.get(SECRET_KEY);
+		if (pat) {
+			return { type: 'pat', token: pat };
+		}
+
+		// Ask user which authentication method they want to use
+		const choice = await vscode.window.showWarningMessage(
+			'No Azure authentication is available. Sign in with Azure or configure a Personal Access Token?',
+			'Sign in',
+			'Use PAT',
+			'Cancel'
+		);
+
+		if (choice === 'Sign in') {
+			const newAad = await this.getAADToken();
+			if (newAad) {
+				return { type: 'aad', token: newAad };
+			}
+			vscode.window.showErrorMessage('Sign-in failed or was cancelled.');
+			return null;
+		} else if (choice === 'Use PAT') {
+			const configured = await this.promptForConfiguration();
+			if (!configured) {
+				return null;
+			}
+			const newPat = await this.context.secrets.get(SECRET_KEY);
+			if (newPat) {
+				return { type: 'pat', token: newPat };
+			}
+			return null;
+		}
+
+		return null;
+	}
+
+	/**
 	 * Get the complete Azure DevOps configuration
 	 */
 	async getConfig(): Promise<AzureDevOpsConfig> {
@@ -114,26 +187,34 @@ export class ConfigurationManager {
 			await config.update('project', project, vscode.ConfigurationTarget.Global);
 		}
 
-		// Prompt for PAT
+		// Prompt for PAT (optional). Users can leave this blank to rely on
+		// Azure AD sign-in instead — PATs are only needed if you prefer or
+		// cannot use Azure authentication.
 		const patInput = await vscode.window.showInputBox({
-			prompt: 'Enter your Azure DevOps Personal Access Token',
-			placeHolder: 'Paste your PAT here',
+			prompt: 'Enter your Azure DevOps Personal Access Token (optional). Leave blank to use Azure sign-in instead',
+			placeHolder: 'Paste your PAT here (optional)',
 			password: true,
 			ignoreFocusOut: true,
-			validateInput: (value) => {
-				return value.trim() ? null : 'Personal Access Token is required';
-			},
+			// Allow empty input so the user can skip storing a PAT.
+			validateInput: () => null,
 		});
 
-		if (!patInput) {
+		// If the input box was cancelled, abort configuration.
+		if (patInput === undefined) {
 			return false;
 		}
 
-		await this.storePAT(patInput.trim());
-
-		vscode.window.showInformationMessage(
-			'Azure DevOps credentials configured successfully!'
-		);
+		const trimmedPat = patInput.trim();
+		if (trimmedPat) {
+			await this.storePAT(trimmedPat);
+			vscode.window.showInformationMessage('Azure DevOps credentials configured successfully!');
+		} else {
+			// User opted to skip entering a PAT. Inform them that AAD sign-in
+			// will be used when available.
+			vscode.window.showInformationMessage(
+				'Azure DevOps configured without a Personal Access Token. Use Azure sign-in when prompted to authenticate.'
+			);
+		}
 
 		return true;
 	}

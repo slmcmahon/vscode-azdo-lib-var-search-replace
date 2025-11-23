@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/slmcmahon/vscode-azdo-lib-var-search-replace"
   },
-  "version": "0.1.0",
+  "version": "1.0.1",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -26,6 +26,18 @@
       {
         "command": "azdo-libvar-search-replace.configureCredentials",
         "title": "Configure Azure DevOps Credentials"
+      },
+      {
+        "command": "azdo-libvar-search-replace.setOrganization",
+        "title": "Set Azure DevOps Organization"
+      },
+      {
+        "command": "azdo-libvar-search-replace.setProject",
+        "title": "Set Azure DevOps Project"
+      },
+      {
+        "command": "azdo-libvar-search-replace.resetConfiguration",
+        "title": "Reset Azure DevOps Configuration"
       },
       {
         "command": "azdo-libvar-search-replace.clearCredentials",

@@ -19,7 +19,7 @@ export interface QuickPickOption {
 export interface AzureDevOpsConfig {
 	organization: string;
 	project: string;
-	pat: string;
+	pat?: string;
 }
 
 export interface ReplacementMap {
