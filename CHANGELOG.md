@@ -2,6 +2,25 @@
 
 All notable changes to the "azdo-libvar-search-replace" extension will be documented in this file.
 
+## [1.0.0] - 2025-11-23
+
+### Added
+- Azure Active Directory authentication (preferred) with seamless fallback to PAT
+- Commands to set organization/project individually and reset full configuration
+- GitHub Actions workflow for automated packaging & publishing on release/tag
+
+### Changed
+- Made PAT entry optional during configuration (AAD sign-in recommended)
+- Refined configuration prompts and messages for clarity
+- Improved internal architecture stability ahead of 1.0 release
+
+### Fixed
+- Ensured reset clears org/project settings and PAT consistently
+- Resolved linting scope issues and improved test reliability
+
+### Notes
+- This 1.0.0 release promotes the modernization work: secure storage, AAD auth, modular design, caching, improved logging, and error handling.
+
 ## [0.1.0] - 2025-11-23
 
 ### Added
