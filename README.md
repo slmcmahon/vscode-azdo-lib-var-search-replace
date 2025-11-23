@@ -13,22 +13,23 @@ This extension allows you to quickly execute search and replace for tokens in a 
 
 ## Requirements
 
-You must have access to an Azure DevOps Project and be able to generate a Personal Access Token with read access to variable libraries:
+You need access to an Azure DevOps Project. Authentication can happen in two ways:
 
-![pat](images/vgroup-sc.png)
+1. **Azure Sign-In (Preferred)** – If you are already signed into Azure in VS Code (or can sign in when prompted), the extension will use your Azure Active Directory token—no Personal Access Token (PAT) required.
+2. **Personal Access Token (Optional Fallback)** – If Azure sign-in is unavailable or you prefer a PAT, create one with at least read access to variable groups.
 
-Ensure your PAT has the following permission:
+Minimum PAT permission:
 - **Variable Groups (Read)**
 
 ## Getting Started
 
 ### Initial Setup
 
-1. **Configure Credentials**:
-   - Run the command: `Azure DevOps: Configure Credentials`
+1. **Configure Credentials / Project Info**:
+   - Run: `Azure DevOps: Configure Credentials` (or set individually via `Set Azure DevOps Organization` / `Set Azure DevOps Project`)
    - Enter your organization name (e.g., `mycompany`)
    - Enter your project name (e.g., `MyProject`)
-   - Enter your Personal Access Token
+   - When prompted for a Personal Access Token you may leave it blank to rely on Azure sign-in.
 
 2. **Use the Extension**:
    - Open a file containing tokens in the format `#{variableName}#`
@@ -38,9 +39,12 @@ Ensure your PAT has the following permission:
 
 ### Commands
 
-- `Azure DevOps: Search and Replace using Variable Library` - Replace tokens in the current file
-- `Azure DevOps: Configure Credentials` - Set up or update Azure DevOps credentials
-- `Azure DevOps: Clear Credentials` - Remove stored credentials
+- `Azure DevOps: Search and Replace using Variable Library` – Replace tokens in the current file
+- `Azure DevOps: Configure Credentials` – Set or update org/project (+ optional PAT)
+- `Azure DevOps: Set Azure DevOps Organization` – Change just the organization
+- `Azure DevOps: Set Azure DevOps Project` – Change just the project
+- `Azure DevOps: Reset Azure DevOps Configuration` – Clear org, project, and stored PAT
+- `Azure DevOps: Clear Credentials` – Remove only the stored credentials
 
 ## Extension Settings
 

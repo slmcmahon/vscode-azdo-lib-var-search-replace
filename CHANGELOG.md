@@ -2,6 +2,17 @@
 
 All notable changes to the "azdo-libvar-search-replace" extension will be documented in this file.
 
+## [1.0.1] - 2025-11-23
+
+### Changed
+- README updated to clarify Personal Access Token is optional and Azure sign-in is preferred.
+
+### Documentation
+- Added detailed authentication modes section (AAD vs PAT) and updated setup instructions.
+
+### Notes
+- Patch release only; no code changes beyond version bump. Safe upgrade from 1.0.0.
+
 ## [1.0.0] - 2025-11-23
 
 ### Added
