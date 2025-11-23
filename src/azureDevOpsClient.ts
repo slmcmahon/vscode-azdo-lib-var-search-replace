@@ -16,7 +16,7 @@ export class AzureDevOpsClient {
 	/**
 	 * Fetch variable libraries from Azure DevOps
 	 */
-	async getVariableLibraries(config: AzureDevOpsConfig): Promise<VariableLibrary[]> {
+	async getVariableLibraries(config: AzureDevOpsConfig, accessToken?: string): Promise<VariableLibrary[]> {
 		const cacheKey = `${config.organization}/${config.project}`;
 		const cached = this.cache.get(cacheKey);
 
@@ -26,24 +26,37 @@ export class AzureDevOpsClient {
 		}
 
 		const url = `https://dev.azure.com/${config.organization}/${config.project}/_apis/distributedtask/variablegroups?api-version=7.0`;
-		const token = Buffer.from(`nobody:${config.pat}`, 'utf8').toString('base64');
+
+		const headers: Record<string, string> = {
+			'Content-Type': 'application/json',
+		};
+
+		if (accessToken) {
+			headers['Authorization'] = `Bearer ${accessToken}`;
+		} else if (config.pat) {
+			const token = Buffer.from(`nobody:${config.pat}`, 'utf8').toString('base64');
+			headers['Authorization'] = `Basic ${token}`;
+		} else {
+			throw new ApiError('No authentication available. Provide a Personal Access Token or sign in with Azure AD.');
+		}
 
 		try {
-			const response = await fetch(url, {
-				headers: {
-					'Authorization': `Basic ${token}`,
-					'Content-Type': 'application/json',
-				},
-			});
+			const response = await fetch(url, { headers });
 
 			if (!response.ok) {
 				const errorText = await response.text().catch(() => 'Unknown error');
 				
 				if (response.status === 401) {
+					if (accessToken) {
+						throw new ApiError('Authentication failed. Please sign in with Azure and ensure your account has access to the project.', 401);
+					}
 					throw new ApiError('Authentication failed. Please check your Personal Access Token.', 401);
 				} else if (response.status === 404) {
 					throw new ApiError('Organization or project not found. Please check your configuration.', 404);
 				} else if (response.status === 403) {
+					if (accessToken) {
+						throw new ApiError('Access denied. Ensure the signed-in account has "Variable Groups (Read)" permission.', 403);
+					}
 					throw new ApiError('Access denied. Ensure your PAT has "Variable Groups (Read)" permissions.', 403);
 				}
 				
